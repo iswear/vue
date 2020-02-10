@@ -1,7 +1,7 @@
 /* @flow */
 
 import type Watcher from './watcher'
-import { remove } from '../util/index'
+import { remove, isUndef, isPrimitive } from '../util/index'
 import config from '../config'
 
 let uid = 0
@@ -18,14 +18,43 @@ export default class Dep {
   constructor () {
     this.id = uid++
     this.subs = []
+    this.selfSubs = []
   }
 
   addSub (sub: Watcher) {
     this.subs.push(sub)
+    if (isUndef(sub.value) || isPrimitive(sub.value)) {
+      return
+    }
+    const ob = sub.value.__ob__
+    if (!ob) {
+      return
+    }
+    const dep = ob.dep
+    if (!dep) {
+      return
+    }
+    if (dep.id === this.id) {
+      this.selfSubs.push(sub)
+    }
   }
 
   removeSub (sub: Watcher) {
     remove(this.subs, sub)
+    if (isUndef(sub.value) || isPrimitive(sub.value)) {
+      return
+    }
+    const ob = sub.value.__ob__
+    if (!ob) {
+      return
+    }
+    const dep = ob.dep
+    if (!dep) {
+      return
+    }
+    if (dep.id === this.id) {
+      remove(this.selfSubs, sub)
+    }
   }
 
   depend () {
@@ -34,9 +63,10 @@ export default class Dep {
     }
   }
 
-  notify () {
+  notify (onlySelf: Boolean) {
     // stabilize the subscriber list first
-    const subs = this.subs.slice()
+    const subs = (arguments.length > 0 && onlySelf) ? this.selfSubs.slice() : this.subs.slice()
+    // const subs = this.subs.slice()
     if (process.env.NODE_ENV !== 'production' && !config.async) {
       // subs aren't sorted in scheduler if not running async
       // we need to sort them now to make sure they fire in correct

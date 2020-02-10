@@ -39,7 +39,7 @@ methodsToPatch.forEach(function (method) {
     }
     if (inserted) ob.observeArray(inserted)
     // notify change
-    ob.dep.notify()
+    ob.dep.notify(false)
     return result
   })
 })

@@ -188,7 +188,7 @@ export function defineReactive (
         val = newVal
       }
       childOb = !shallow && observe(newVal)
-      dep.notify()
+      dep.notify(false)
     }
   })
 }
@@ -226,7 +226,7 @@ export function set (target: Array<any> | Object, key: any, val: any): any {
     return val
   }
   defineReactive(ob.value, key, val)
-  ob.dep.notify()
+  ob.dep.notify(true)
   return val
 }
 
@@ -258,7 +258,7 @@ export function del (target: Array<any> | Object, key: any) {
   if (!ob) {
     return
   }
-  ob.dep.notify()
+  ob.dep.notify(true)
 }
 
 /**
