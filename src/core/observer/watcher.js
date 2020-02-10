@@ -116,6 +116,10 @@ export default class Watcher {
       if (this.deep) {
         traverse(value)
       }
+      const len = this.newDeps.length
+      if (len > 0) {
+        this.newDeps[len - 1].addSelfSub(this)
+      }
       popTarget()
       this.cleanupDeps()
     }

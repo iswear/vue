@@ -23,38 +23,19 @@ export default class Dep {
 
   addSub (sub: Watcher) {
     this.subs.push(sub)
-    if (isUndef(sub.value) || isPrimitive(sub.value)) {
-      return
-    }
-    const ob = sub.value.__ob__
-    if (!ob) {
-      return
-    }
-    const dep = ob.dep
-    if (!dep) {
-      return
-    }
-    if (dep.id === this.id) {
-      this.selfSubs.push(sub)
-    }
   }
 
   removeSub (sub: Watcher) {
     remove(this.subs, sub)
-    if (isUndef(sub.value) || isPrimitive(sub.value)) {
-      return
-    }
-    const ob = sub.value.__ob__
-    if (!ob) {
-      return
-    }
-    const dep = ob.dep
-    if (!dep) {
-      return
-    }
-    if (dep.id === this.id) {
-      remove(this.selfSubs, sub)
-    }
+    remove(this.selfSubs, sub)
+  }
+
+  addSelfSub (sub: Watcher) {
+    this.selfSubs.push(sub)
+  }
+
+  removeSelfSub (sub: Watcher) {
+    remove(this.selfSubs, sub)
   }
 
   depend () {
@@ -65,16 +46,31 @@ export default class Dep {
 
   notify (onlySelf: Boolean) {
     // stabilize the subscriber list first
-    const subs = (arguments.length > 0 && onlySelf) ? this.selfSubs.slice() : this.subs.slice()
-    // const subs = this.subs.slice()
-    if (process.env.NODE_ENV !== 'production' && !config.async) {
-      // subs aren't sorted in scheduler if not running async
-      // we need to sort them now to make sure they fire in correct
-      // order
-      subs.sort((a, b) => a.id - b.id)
-    }
-    for (let i = 0, l = subs.length; i < l; i++) {
-      subs[i].update()
+    if (onlySelf) {
+      const subs = this.selfSubs.slice()
+      if (process.env.NODE_ENV !== 'production' && !config.async) {
+        subs.sort((a, b) => b.id - a.id)
+      }
+      for (let i = subs.length - 1; i >=0; --i) {
+        const sub = subs[i]
+        sub.update()
+        if (sub.deps[sub.deps.length - 1] === this) {
+          continue
+        }
+        this.removeSelfSub(sub)
+      }
+    } else {
+      const subs = this.subs.slice()
+      // const subs = this.subs.slice()
+      if (process.env.NODE_ENV !== 'production' && !config.async) {
+        // subs aren't sorted in scheduler if not running async
+        // we need to sort them now to make sure they fire in correct
+        // order
+        subs.sort((a, b) => a.id - b.id)
+      }
+      for (let i = 0, l = subs.length; i < l; i++) {
+        subs[i].update()
+      }
     }
   }
 }
