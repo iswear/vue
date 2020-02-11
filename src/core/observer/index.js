@@ -254,7 +254,13 @@ export function del (target: Array<any> | Object, key: any) {
   if (!hasOwn(target, key)) {
     return
   }
+  const value = target[key]
   delete target[key]
+  if (!(isUndef(value) || isPrimitive(value))) {
+    if (value.__ob__) {
+      value.__ob__.dep.notify(false)
+    }
+  }
   if (!ob) {
     return
   }

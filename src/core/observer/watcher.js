@@ -103,6 +103,10 @@ export default class Watcher {
     let value
     const vm = this.vm
     try {
+      const len = this.deps.length
+      if (len > 0) {
+        this.deps[len - 1].removeSelfSub(this)
+      }
       value = this.getter.call(vm, vm)
     } catch (e) {
       if (this.user) {
