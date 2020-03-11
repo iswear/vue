@@ -77,8 +77,10 @@ export default class Watcher {
       : ''
     // parse expression for getter
     if (typeof expOrFn === 'function') {
+      this.pathWatcher = false
       this.getter = expOrFn
     } else {
+      this.pathWatcher = true
       this.getter = parsePath(expOrFn)
       if (!this.getter) {
         this.getter = noop
@@ -103,9 +105,16 @@ export default class Watcher {
     let value
     const vm = this.vm
     try {
-      const len = this.deps.length
-      if (len > 0) {
-        this.deps[len - 1].removeSelfSub(this)
+      const deps = this.deps
+      const len = deps.length
+      if (this.pathWatcher) {
+        if (len > 0) {
+          deps[len - 1].removeSelfSub(this)
+        }
+      } else {
+        for (let i = 0; i < len; ++i) {
+          deps[i].removeSelfSub(this)
+        }
       }
       value = this.getter.call(vm, vm)
     } catch (e) {
@@ -120,9 +129,16 @@ export default class Watcher {
       if (this.deep) {
         traverse(value)
       }
-      const len = this.newDeps.length
-      if (len > 0) {
-        this.newDeps[len - 1].addSelfSub(this)
+      const newDeps = this.newDeps
+      const len = newDeps.length
+      if (this.pathWatcher) {
+        if (len > 0) {
+          newDeps[len - 1].addSelfSub(this)
+        }
+      } else {
+        for (let i = 0; i < len; ++i) {
+          newDeps[i].addSelfSub(this)
+        }
       }
       popTarget()
       this.cleanupDeps()
